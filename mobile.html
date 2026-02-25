@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>同声传译 · 字幕查看</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f2f5;
+            height: 100dvh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ═══ 登录页 ═══ */
+        .login-page {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            height: 100dvh;
+            background: linear-gradient(160deg, #1a1a2e 0%, #16213e 45%, #0f3460 100%);
+            padding: 72px 32px 52px;
+        }
+
+        .login-hero {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 18px;
+            text-align: center;
+        }
+
+        .login-logo-icon {
+            width: 88px;
+            height: 88px;
+            background: linear-gradient(135deg, #1890FF, #6c63ff);
+            border-radius: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            box-shadow: 0 14px 36px rgba(24,144,255,0.45);
+        }
+
+        .login-app-name {
+            font-size: 30px;
+            font-weight: 700;
+            color: white;
+            letter-spacing: 2px;
+        }
+
+        .login-tagline {
+            font-size: 14px;
+            color: rgba(255,255,255,0.5);
+            line-height: 1.7;
+        }
+
+        .login-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-size: 12px;
+            color: rgba(255,255,255,0.6);
+            margin-top: 4px;
+        }
+
+        .login-card {
+            width: 100%;
+        }
+
+        .login-sso-btn {
+            width: 100%;
+            height: 54px;
+            background: linear-gradient(135deg, #1890FF, #6c63ff);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 8px 28px rgba(24,144,255,0.4);
+            transition: transform 0.15s, opacity 0.15s;
+        }
+
+        .login-sso-btn:active { transform: scale(0.97); opacity: 0.9; }
+
+        .login-hint {
+            text-align: center;
+            font-size: 12px;
+            color: rgba(255,255,255,0.3);
+            margin-top: 14px;
+        }
+
+        /* ═══ 主界面骨架 ═══ */
+        .main-page {
+            display: none;
+            flex-direction: column;
+            height: 100dvh;
+            background: #1a1a1a;
+        }
+
+        /* ═══ 顶部栏 ═══ */
+        .topbar {
+            height: 52px;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 14px;
+            flex-shrink: 0;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            position: relative;
+            z-index: 10;
+        }
+
+        .topbar-logo {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .topbar-logo-icon {
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, #1890FF, #6c63ff);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+        }
+
+        .topbar-logo-text {
+            font-size: 15px;
+            font-weight: 700;
+            color: rgba(255,255,255,0.9);
+        }
+
+        .topbar-center {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* 频道号 badge */
+        .channel-badge {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: rgba(255,255,255,0.75);
+            padding: 4px 10px;
+            border-radius: 14px;
+            font-size: 12px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .channel-badge:active { opacity: 0.7; }
+        .channel-badge-label { opacity: 0.6; }
+        .channel-badge-value { font-weight: 700; letter-spacing: 0.5px; color: white; }
+
+        .topbar-right { display: flex; align-items: center; gap: 8px; }
+
+        /* 退出按钮（通话中）*/
+        .exit-btn {
+            display: none;
+            height: 30px;
+            padding: 0 12px;
+            background: rgba(255,77,79,0.15);
+            border: 1px solid rgba(255,77,79,0.35);
+            border-radius: 14px;
+            color: #ff7875;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .exit-btn.show { display: block; }
+        .exit-btn:active { opacity: 0.75; }
+
+        /* ── 设置按钮 & 下拉菜单 ── */
+        .settings-wrap {
+            position: relative;
+        }
+
+        .settings-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.75);
+            font-size: 17px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.15s;
+            flex-shrink: 0;
+        }
+        .settings-btn:active { background: rgba(255,255,255,0.15); }
+
+        .settings-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: #1e2233;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 14px;
+            overflow: hidden;
+            min-width: 180px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.45);
+            z-index: 500;
+        }
+        .settings-dropdown.open { display: block; }
+
+        .settings-dropdown-section {
+            padding: 10px 14px 6px;
+            font-size: 11px;
+            color: rgba(255,255,255,0.3);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .settings-lang-row {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            margin: 0 12px 10px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .settings-lang-btn {
+            flex: 1;
+            padding: 7px 0;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.38);
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .settings-lang-btn.active {
+            background: rgba(24,144,255,0.3);
+            color: #69b1ff;
+            border-radius: 8px;
+        }
+
+        .settings-divider {
+            height: 1px;
+            background: rgba(255,255,255,0.07);
+            margin: 0 12px;
+        }
+
+        .settings-dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 13px 16px;
+            background: transparent;
+            border: none;
+            color: rgba(255,255,255,0.75);
+            font-size: 14px;
+            cursor: pointer;
+            text-align: left;
+            transition: background 0.15s;
+        }
+        .settings-dropdown-item:active { background: rgba(255,255,255,0.06); }
+        .settings-dropdown-item.danger { color: #ff7875; }
+        .settings-dropdown-item .item-icon { font-size: 16px; width: 20px; text-align: center; }
+
+        /* ═══ 加入前的空白状态 ═══ */
+        .join-screen {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 32px 28px;
+            gap: 0;
+        }
+
+        .join-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .join-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: rgba(255,255,255,0.85);
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .join-desc {
+            font-size: 14px;
+            color: rgba(255,255,255,0.4);
+            text-align: center;
+            line-height: 1.6;
+            margin-bottom: 36px;
+        }
+
+        /* 扫码区域 */
+        .qr-scanner-frame {
+            width: 220px;
+            height: 220px;
+            position: relative;
+            margin-bottom: 36px;
+        }
+
+        .qr-scanner-inner {
+            width: 100%;
+            height: 100%;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.04);
+            border: 1.5px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 四角装饰 */
+        .qr-corner {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            border-color: #1890FF;
+            border-style: solid;
+        }
+
+        .qr-corner.tl { top: 10px; left: 10px; border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
+        .qr-corner.tr { top: 10px; right: 10px; border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
+        .qr-corner.bl { bottom: 10px; left: 10px; border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
+        .qr-corner.br { bottom: 10px; right: 10px; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
+
+        /* 扫描线 */
+        .qr-scan-line {
+            position: absolute;
+            left: 14px;
+            right: 14px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #1890FF, transparent);
+            animation: scanLine 2s ease-in-out infinite;
+        }
+
+        @keyframes scanLine {
+            0% { top: 14px; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: calc(100% - 14px); opacity: 0; }
+        }
+
+        .qr-scan-icon {
+            font-size: 56px;
+            opacity: 0.18;
+        }
+
+        .scan-btn {
+            width: 100%;
+            max-width: 280px;
+            height: 54px;
+            background: linear-gradient(135deg, #1890FF, #6c63ff);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: opacity 0.15s, transform 0.15s;
+            box-shadow: 0 8px 24px rgba(24,144,255,0.35);
+        }
+
+        .scan-btn:active { opacity: 0.85; transform: scale(0.97); }
+
+        .scan-btn-icon { font-size: 20px; }
+
+        /* 语言切换按钮 */
+        .lang-toggle {
+            display: flex;
+            align-items: center;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 20px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .lang-toggle-btn {
+            padding: 4px 10px;
+            font-size: 12px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.4);
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+
+        .lang-toggle-btn.active {
+            background: rgba(255,255,255,0.15);
+            color: rgba(255,255,255,0.9);
+        }
+
+        /* 登录页语言切换 */
+        .login-lang-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        .login-lang-btn {
+            padding: 5px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.45);
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .login-lang-btn.active {
+            background: rgba(255,255,255,0.15);
+            color: white;
+        }
+
+        /* ═══ 字幕区 ═══ */
+        .subtitle-screen {
+            display: none;
+            flex-direction: column;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .subtitle-screen.active {
+            display: flex;
+        }
+
+        /* 字幕工具栏 */
+        .subtitle-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 14px;
+            background: rgba(0,0,0,0.5);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            flex-shrink: 0;
+        }
+
+        .subtitle-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: rgba(255,255,255,0.4);
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #52c41a;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+        }
+
+        /* 显示模式 pill */
+        .display-pill {
+            display: flex;
+            background: rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 2px;
+        }
+
+        .display-pill-btn {
+            padding: 4px 10px;
+            border: none;
+            background: transparent;
+            color: rgba(255,255,255,0.45);
+            font-size: 11px;
+            border-radius: 6px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.15s;
+        }
+
+        .display-pill-btn.active {
+            background: rgba(255,255,255,0.15);
+            color: rgba(255,255,255,0.9);
+        }
+
+        /* 字幕列表 */
+        .subtitle-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 0 16px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .subtitle-item {
+            padding: 10px 14px;
+            margin-bottom: 2px;
+        }
+
+        .subtitle-user-row {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            margin-bottom: 5px;
+        }
+
+        .subtitle-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .subtitle-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+        .subtitle-username {
+            font-size: 12px;
+            color: rgba(255,255,255,0.4);
+            font-weight: 500;
+        }
+
+        .subtitle-time {
+            font-size: 10px;
+            color: rgba(255,255,255,0.2);
+            margin-left: auto;
+        }
+
+        .subtitle-bubble {
+            background: rgba(255,255,255,0.06);
+            border-radius: 12px;
+            padding: 10px 13px;
+            margin-left: 31px;
+        }
+
+        .subtitle-original {
+            font-size: 14px;
+            color: rgba(255,255,255,0.75);
+            line-height: 1.5;
+            margin-bottom: 4px;
+        }
+
+        .subtitle-translation {
+            font-size: 13px;
+            color: rgba(255,200,80,0.85);
+            line-height: 1.5;
+        }
+
+        .subtitle-original-hidden .subtitle-original { display: none; }
+        .subtitle-original-hidden .subtitle-translation { margin-top: 0; }
+
+        /* ═══ 底部安全区占位 ═══ */
+        .safe-bottom {
+            height: env(safe-area-inset-bottom, 0px);
+            background: #1a1a1a;
+            flex-shrink: 0;
+        }
+
+        /* ═══ Toast ═══ */
+        .toast {
+            position: fixed;
+            bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+            left: 50%;
+            transform: translateX(-50%) translateY(16px);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 24px;
+            font-size: 13px;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.28s;
+            z-index: 9999;
+            white-space: nowrap;
+        }
+
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .toast.success { background: rgba(82,196,26,0.9); }
+        .toast.error { background: rgba(255,77,79,0.9); }
+        .toast.warning { background: rgba(250,173,20,0.9); }
+
+        /* ═══ 二维码弹窗 ═══ */
+        .qr-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.75);
+            z-index: 8000;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        .qr-modal.show { display: flex; }
+
+        .qr-modal-content {
+            background: #1e1e2e;
+            border-radius: 24px 24px 0 0;
+            padding: 20px 24px calc(32px + env(safe-area-inset-bottom, 0px));
+            width: 100%;
+            text-align: center;
+        }
+
+        .qr-handle {
+            width: 36px;
+            height: 4px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 2px;
+            margin: 0 auto 20px;
+        }
+
+        .qr-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 6px;
+        }
+
+        .qr-subtitle {
+            font-size: 13px;
+            color: rgba(255,255,255,0.4);
+            margin-bottom: 24px;
+        }
+
+        .qr-placeholder {
+            width: 180px;
+            height: 180px;
+            background: white;
+            border-radius: 16px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 100px;
+            color: #333;
+        }
+
+        .qr-channel-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: rgba(255,255,255,0.5);
+        }
+
+        .qr-channel-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: white;
+            letter-spacing: 1px;
+        }
+
+        .qr-close-btn {
+            width: 100%;
+            padding: 14px;
+            background: rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.75);
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        /* ═══ 开发者模式弹窗 ═══ */
+        .dev-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 9000;
+            align-items: flex-end;
+        }
+
+        .dev-modal.active { display: flex; }
+
+        .dev-content {
+            background: #1e1e2e;
+            border-radius: 24px 24px 0 0;
+            padding: 24px 20px calc(28px + env(safe-area-inset-bottom, 0px));
+            width: 100%;
+        }
+
+        .dev-handle {
+            width: 36px;
+            height: 4px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 2px;
+            margin: 0 auto 20px;
+        }
+
+        .dev-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: white;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .dev-option {
+            padding: 14px;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            margin-bottom: 10px;
+            background: rgba(255,255,255,0.04);
+        }
+
+        .dev-option-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .dev-option-title { font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.85); margin-bottom: 3px; }
+        .dev-option-desc { font-size: 12px; color: rgba(255,255,255,0.4); }
+
+        .switch {
+            width: 42px;
+            height: 24px;
+            background: #d9d9d9;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.25s;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .switch::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: left 0.25s;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+        }
+
+        .switch.active { background: #1890FF; }
+        .switch.active::after { left: 20px; }
+
+        .dev-close {
+            width: 100%;
+            margin-top: 12px;
+            padding: 13px;
+            background: rgba(255,255,255,0.06);
+            color: rgba(255,255,255,0.6);
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ══════════ 登录页 ══════════ -->
+<div class="login-page" id="loginPage" style="position:relative;">
+    <!-- 语言切换（登录页右上角）-->
+    <div class="login-lang-toggle">
+        <button class="login-lang-btn active" id="loginLangZh" onclick="setLang('zh')">中文</button>
+        <button class="login-lang-btn" id="loginLangEn" onclick="setLang('en')">EN</button>
+    </div>
+    <div class="login-hero">
+        <div class="login-logo-icon">🎙</div>
+        <div class="login-app-name" data-i18n="appName">同声传译</div>
+        <div class="login-tagline" data-i18n="loginTagline">扫码即可实时查看字幕<br>支持多语言翻译</div>
+        <div class="login-badge" data-i18n="loginBadge">📱 手机字幕查看端</div>
+    </div>
+    <div class="login-card">
+        <button class="login-sso-btn" onclick="login()" data-i18n="loginBtn">声网账号 SSO 登录</button>
+        <div class="login-hint" data-i18n="loginHint">安全登录 · 数据加密传输</div>
+    </div>
+</div>
+
+<!-- ══════════ 主界面 ══════════ -->
+<div class="main-page" id="mainPage">
+
+    <!-- 顶部栏 -->
+    <header class="topbar">
+        <div class="topbar-logo" onclick="handleLogoClick()">
+            <div class="topbar-logo-icon">🎙</div>
+            <span class="topbar-logo-text">同声传译</span>
+        </div>
+
+        <div class="topbar-center">
+            <div class="channel-badge" id="channelBadge" style="display:none;" onclick="copyChannelId()">
+                <span class="channel-badge-label" data-i18n="channel">频道</span>
+                <span class="channel-badge-value" id="displayChannelId"></span>
+                <span style="font-size:10px;opacity:0.5;">📋</span>
+            </div>
+        </div>
+
+        <div class="topbar-right">
+            <div class="settings-wrap" id="settingsWrap">
+                <button class="settings-btn" onclick="toggleSettingsMenu(event)" title="设置">⚙️</button>
+                <div class="settings-dropdown" id="settingsDropdown">
+                    <!-- 语言切换 -->
+                    <div class="settings-dropdown-section" data-i18n="settingsLangLabel">界面语言</div>
+                    <div class="settings-lang-row">
+                        <button class="settings-lang-btn active" id="settingsLangZh" onclick="setLang('zh');event.stopPropagation()">中文</button>
+                        <button class="settings-lang-btn" id="settingsLangEn" onclick="setLang('en');event.stopPropagation()">English</button>
+                    </div>
+                    <!-- 退出（仅加入频道后显示）-->
+                    <div class="settings-divider" id="settingsExitDivider" style="display:none;"></div>
+                    <button class="settings-dropdown-item danger" id="settingsExitBtn" style="display:none;" onclick="confirmExit();closeSettingsMenu()">
+                        <span class="item-icon">🚪</span>
+                        <span data-i18n="exitBtn">退出频道</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 加入前：纯扫码 -->
+    <div class="join-screen" id="joinScreen">
+        <div class="qr-scanner-frame">
+            <div class="qr-scanner-inner">
+                <div class="qr-corner tl"></div>
+                <div class="qr-corner tr"></div>
+                <div class="qr-corner bl"></div>
+                <div class="qr-corner br"></div>
+                <div class="qr-scan-line"></div>
+                <div class="qr-scan-icon">◼</div>
+            </div>
+        </div>
+        <div class="join-title" data-i18n="scanTitle">扫码加入字幕频道</div>
+        <div class="join-desc" data-i18n="scanDesc" style="margin-bottom:32px;">使用相机扫描桌面端展示的二维码<br>自动加入并实时查看字幕</div>
+        <button class="scan-btn" onclick="triggerQRScan()">
+            <span class="scan-btn-icon">📷</span>
+            <span data-i18n="scanBtn">打开相机扫码</span>
+        </button>
+    </div>
+
+    <!-- 字幕区 -->
+    <div class="subtitle-screen" id="subtitleScreen">
+        <div class="subtitle-toolbar">
+            <div class="subtitle-status">
+                <div class="status-dot"></div>
+                <span data-i18n="liveSubtitle">实时字幕</span>
+            </div>
+            <div class="display-pill">
+                <button class="display-pill-btn active" id="modeBtnBoth"
+                    onclick="setDisplayMode('both')" data-i18n="modeBoth">原文+译文</button>
+                <button class="display-pill-btn" id="modeBtnTransOnly"
+                    onclick="setDisplayMode('translationOnly')" data-i18n="modeTransOnly">仅译文</button>
+            </div>
+        </div>
+        <div class="subtitle-list" id="subtitleList"></div>
+    </div>
+
+    <div class="safe-bottom"></div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- 二维码弹窗（展示给别人扫）-->
+<div class="qr-modal" id="qrModal" onclick="closeQRModal(event)">
+    <div class="qr-modal-content" onclick="event.stopPropagation()">
+        <div class="qr-handle"></div>
+        <div class="qr-title" data-i18n="qrTitle">邀请他人查看字幕</div>
+        <div class="qr-subtitle" data-i18n="qrSubtitle">扫描下方二维码，即可在手机端实时查看字幕</div>
+        <div class="qr-placeholder">◼</div>
+        <div class="qr-channel-row">
+            <span>频道号</span>
+            <span class="qr-channel-value" id="qrChannelValue">—</span>
+            <span onclick="copyChannelId()" style="cursor:pointer;font-size:15px;">📋</span>
+        </div>
+        <button class="qr-close-btn" onclick="closeQRModal()" data-i18n="qrClose">关闭</button>
+    </div>
+</div>
+
+<!-- 开发者模式弹窗 -->
+<div class="dev-modal" id="devModal">
+    <div class="dev-content">
+        <div class="dev-handle"></div>
+        <div class="dev-title" data-i18n="devTitle">🛠 开发者模式</div>
+        <div class="dev-option">
+            <div class="dev-option-row">
+                <div>
+                    <div class="dev-option-title" data-i18n="devTimeLimitTitle">移除 10 分钟体验时间限制</div>
+                    <div class="dev-option-desc" data-i18n="devTimeLimitDesc">开启后本次通话无时间限制</div>
+                </div>
+                <div class="switch" id="noTimeLimitSwitch" onclick="toggleNoTimeLimit()"></div>
+            </div>
+        </div>
+        <button class="dev-close" onclick="closeDevModal()" data-i18n="devClose">关闭</button>
+    </div>
+</div>
+
+<script>
+    // ─── 状态 ───
+    const state = {
+        isLoggedIn: false,
+        inSession: false,
+        channelId: '',
+        userId: '',
+        displayMode: 'both',
+        remainingSeconds: 600,
+        timerInterval: null,
+        noTimeLimitEnabled: false,
+        logoClickCount: 0,
+        logoClickTimer: null,
+        subtitles: [],
+        lang: 'zh'
+    };
+
+    // ─── i18n ───
+    const i18n = {
+        zh: {
+            appName:      '同声传译',
+            loginTagline: '扫码即可实时查看字幕<br>支持多语言翻译',
+            loginBadge:   '📱 手机字幕查看端',
+            loginBtn:     '声网账号 SSO 登录',
+            loginHint:    '安全登录 · 数据加密传输',
+            scanTitle:    '扫码加入字幕频道',
+            scanDesc:     '使用相机扫描桌面端展示的二维码<br>自动加入并实时查看字幕',
+            scanBtn:      '打开相机扫码',
+            channel:      '频道',
+            exitBtn:          '退出频道',
+            settingsLangLabel:'界面语言',
+            liveSubtitle: '实时字幕',
+            modeBoth:     '原文+译文',
+            modeTransOnly:'仅译文',
+            loginSuccess: '登录成功',
+            joinedChannel:'已加入频道 ',
+            leftChannel:  '已退出频道',
+            scanningTip:  '正在调用相机…（演示：模拟扫码成功）',
+            channelCopied:'频道号已复制',
+            copyFailed:   '复制失败',
+            confirmExit:  '确定退出当前字幕频道？',
+            timeLimitOff: '已移除时间限制',
+            timeLimitOn:  '已恢复 10 分钟限制',
+            timeUp:       '体验时间已到，已退出频道',
+            noSubtitle:   '暂无字幕',
+            devTitle:     '🛠 开发者模式',
+            devTimeLimitTitle: '移除 10 分钟体验时间限制',
+            devTimeLimitDesc:  '开启后本次通话无时间限制',
+            devClose:     '关闭',
+            qrTitle:      '邀请他人查看字幕',
+            qrSubtitle:   '扫描下方二维码，即可在手机端实时查看字幕',
+            qrClose:      '关闭'
+        },
+        en: {
+            appName:      'Interpretation',
+            loginTagline: 'Scan QR to view live subtitles<br>Multi-language translation',
+            loginBadge:   '📱 Mobile Subtitle Viewer',
+            loginBtn:     'Agora SSO Login',
+            loginHint:    'Secure Login · Encrypted Transmission',
+            scanTitle:    'Scan to Join Subtitle Channel',
+            scanDesc:     'Scan the QR code shown on the desktop<br>to join and view subtitles in real time',
+            scanBtn:      'Open Camera to Scan',
+            channel:      'Channel',
+            exitBtn:          'Leave Channel',
+            settingsLangLabel:'Interface Language',
+            liveSubtitle: 'Live Subtitles',
+            modeBoth:     'Original + Translation',
+            modeTransOnly:'Translation Only',
+            loginSuccess: 'Login successful',
+            joinedChannel:'Joined channel ',
+            leftChannel:  'Left channel',
+            scanningTip:  'Opening camera… (Demo: simulating scan)',
+            channelCopied:'Channel ID copied',
+            copyFailed:   'Copy failed',
+            confirmExit:  'Are you sure you want to exit the subtitle channel?',
+            timeLimitOff: 'Time limit removed',
+            timeLimitOn:  '10-minute limit restored',
+            timeUp:       'Time is up, exited channel',
+            noSubtitle:   'No subtitles yet',
+            devTitle:     '🛠 Developer Mode',
+            devTimeLimitTitle: 'Remove 10-min Time Limit',
+            devTimeLimitDesc:  'Unlimited call duration when enabled',
+            devClose:     'Close',
+            qrTitle:      'Invite Others to View',
+            qrSubtitle:   'Scan the QR code below to view subtitles on mobile',
+            qrClose:      'Close'
+        }
+    };
+
+    function t(key) { return i18n[state.lang][key] || i18n.zh[key] || key; }
+
+    function setLang(lang) {
+        state.lang = lang;
+        // 同步所有语言按钮
+        document.getElementById('loginLangZh')?.classList.toggle('active', lang === 'zh');
+        document.getElementById('loginLangEn')?.classList.toggle('active', lang === 'en');
+        document.getElementById('settingsLangZh')?.classList.toggle('active', lang === 'zh');
+        document.getElementById('settingsLangEn')?.classList.toggle('active', lang === 'en');
+
+        // 更新所有 data-i18n 元素
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            const val = t(key);
+            if (key === 'loginTagline' || key === 'scanDesc') {
+                el.innerHTML = val;
+            } else {
+                el.textContent = val;
+            }
+        });
+        // 同步开发者弹窗文案
+        const devTitleEl = document.querySelector('.dev-title');
+        if (devTitleEl) devTitleEl.textContent = t('devTitle');
+        const devCloseEl = document.querySelector('.dev-close');
+        if (devCloseEl) devCloseEl.textContent = t('devClose');
+    }
+
+    // ─── 登录 ───
+    function login() {
+        setTimeout(() => {
+            state.isLoggedIn = true;
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('mainPage').style.display = 'flex';
+            showToast(t('loginSuccess'), 'success');
+        }, 400);
+    }
+
+    // ─── 扫码加入（演示模拟）───
+    function triggerQRScan() {
+        showToast(t('scanningTip'), 'info');
+        // 模拟扫码成功延迟
+        setTimeout(() => {
+            const demoChannel = Math.floor(10000000 + Math.random() * 90000000).toString();
+            joinChannel(demoChannel);
+        }, 1500);
+    }
+
+    function joinChannel(channelId) {
+        state.channelId = channelId;
+        state.userId = 'Viewer-' + Math.floor(1000 + Math.random() * 9000);
+        state.inSession = true;
+        state.remainingSeconds = 600;
+
+        document.getElementById('displayChannelId').textContent = state.channelId;
+        document.getElementById('qrChannelValue').textContent = state.channelId;
+        document.getElementById('channelBadge').style.display = 'flex';
+
+        document.getElementById('joinScreen').style.display = 'none';
+        document.getElementById('subtitleScreen').classList.add('active');
+        _syncSettingsExitVisibility(true);
+
+        startTimer();
+        startSimulateSubtitles();
+        showToast(t('joinedChannel') + state.channelId, 'success');
+    }
+
+    // ─── 退出 ───
+    function confirmExit() {
+        if (confirm(t('confirmExit'))) exitSession();
+    }
+
+    function exitSession() {
+        state.inSession = false;
+        stopTimer();
+        clearSubtitles();
+
+        document.getElementById('channelBadge').style.display = 'none';
+        document.getElementById('subtitleScreen').classList.remove('active');
+        document.getElementById('joinScreen').style.display = 'flex';
+        _syncSettingsExitVisibility(false);
+        showToast(t('leftChannel'), 'info');
+    }
+
+    // ─── 显示模式 ───
+    function setDisplayMode(mode) {
+        state.displayMode = mode;
+        document.getElementById('modeBtnBoth').classList.toggle('active', mode === 'both');
+        document.getElementById('modeBtnTransOnly').classList.toggle('active', mode === 'translationOnly');
+        document.body.classList.toggle('subtitle-original-hidden', mode === 'translationOnly');
+    }
+
+    // ─── 复制频道号 ───
+    function copyChannelId() {
+        if (!state.channelId) return;
+        navigator.clipboard.writeText(state.channelId).then(() => {
+            showToast(t('channelCopied'), 'success');
+        }).catch(() => showToast(t('copyFailed'), 'error'));
+    }
+
+    // ─── 计时器（已移除倒计时 UI，保留空函数防报错）───
+    function startTimer() {}
+    function stopTimer() {
+        if (state.timerInterval) { clearInterval(state.timerInterval); state.timerInterval = null; }
+    }
+
+    // ─── 字幕模拟 ───
+    let subtitleInterval;
+
+    function startSimulateSubtitles() {
+        clearInterval(subtitleInterval);
+        const users = ['Emma（主讲）', state.userId];
+        const samples = [
+            { zh: '大家好，欢迎参加今天的国际技术峰会，我们将探讨实时通信领域的最新进展。', en: 'Hello everyone, welcome to today\'s international technology summit. We will explore the latest developments in real-time communications.' },
+            { zh: '实时语音转录和翻译技术正在改变我们的跨语言沟通方式，效率提升非常显著。', en: 'Real-time speech transcription and translation technology is transforming how we communicate across languages, with remarkable efficiency gains.' },
+            { zh: '这套系统基于先进的人工智能算法，可以实现毫秒级的翻译响应，非常适合会议场景。', en: 'This system is based on advanced AI algorithms and achieves millisecond-level translation response, ideal for conference scenarios.' },
+            { zh: '我们的语音识别准确率已经超过了95%，即使在嘈杂的环境下也能保持高质量输出。', en: 'Our speech recognition accuracy has exceeded 95%, maintaining high-quality output even in noisy environments.' },
+            { zh: '接下来我会展示几个实际使用案例，请大家留意字幕区域的实时翻译效果。', en: 'Next, I will demonstrate several real-world use cases. Please pay attention to the real-time translation in the subtitle area.' },
+            { zh: '感谢各位的积极参与，你们的反馈对我们不断优化产品至关重要。', en: 'Thank you all for your active participation. Your feedback is crucial for our continuous product improvement.' }
+        ];
+        let index = 0;
+        subtitleInterval = setInterval(() => {
+            const isMe = index % 4 === 3;
+            const user = isMe ? users[1] : users[0];
+            const sample = samples[index % samples.length];
+            addSubtitle(user, sample.zh, sample.en, isMe);
+            index++;
+        }, 3000);
+    }
+
+    function addSubtitle(user, original, translation, isMe) {
+        const list = document.getElementById('subtitleList');
+        const time = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+        const seed = isMe ? (state.userId || 'viewer').toLowerCase().replace(/[^a-z0-9]/g, '') : 'emma';
+        const avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`;
+
+        const item = document.createElement('div');
+        item.className = 'subtitle-item';
+        item.innerHTML = `
+            <div class="subtitle-user-row">
+                <div class="subtitle-avatar"><img src="${avatarUrl}" alt="${user}" loading="lazy"></div>
+                <span class="subtitle-username">${user}</span>
+                <span class="subtitle-time">${time}</span>
+            </div>
+            <div class="subtitle-bubble">
+                <div class="subtitle-original">${original}</div>
+                <div class="subtitle-translation">${translation}</div>
+            </div>`;
+        list.appendChild(item);
+        list.scrollTop = list.scrollHeight;
+        if (list.children.length > 60) list.removeChild(list.firstChild);
+
+        state.subtitles.push({ user, original, translation, time });
+    }
+
+    function clearSubtitles() {
+        clearInterval(subtitleInterval);
+        const list = document.getElementById('subtitleList');
+        if (list) list.innerHTML = '';
+        state.subtitles = [];
+    }
+
+    // ─── 二维码弹窗 ───
+    function showQRModal() {
+        document.getElementById('qrModal').classList.add('show');
+    }
+
+    function closeQRModal(event) {
+        if (!event || event.target.classList.contains('qr-modal')) {
+            document.getElementById('qrModal').classList.remove('show');
+        }
+    }
+
+    // ─── Logo 点击 5 次 → 开发者模式 ───
+    function handleLogoClick() {
+        state.logoClickCount++;
+        if (state.logoClickTimer) clearTimeout(state.logoClickTimer);
+        if (state.logoClickCount >= 5) {
+            openDevModal();
+            state.logoClickCount = 0;
+        } else {
+            state.logoClickTimer = setTimeout(() => { state.logoClickCount = 0; }, 2000);
+        }
+    }
+
+    function openDevModal() { document.getElementById('devModal').classList.add('active'); }
+    function closeDevModal() { document.getElementById('devModal').classList.remove('active'); }
+
+    // ─── 设置菜单 ───
+    function toggleSettingsMenu(e) {
+        e && e.stopPropagation();
+        document.getElementById('settingsDropdown').classList.toggle('open');
+    }
+    function closeSettingsMenu() {
+        document.getElementById('settingsDropdown').classList.remove('open');
+    }
+    // 点击页面其他区域关闭菜单
+    document.addEventListener('click', () => closeSettingsMenu());
+
+    function _syncSettingsExitVisibility(inChannel) {
+        const show = !!inChannel;
+        document.getElementById('settingsExitBtn').style.display = show ? '' : 'none';
+        document.getElementById('settingsExitDivider').style.display = show ? '' : 'none';
+    }
+
+    function toggleNoTimeLimit() {
+        const sw = document.getElementById('noTimeLimitSwitch');
+        state.noTimeLimitEnabled = sw.classList.toggle('active');
+        if (state.noTimeLimitEnabled) {
+            stopTimer();
+            showToast(t('timeLimitOff'), 'success');
+        } else {
+            if (state.inSession) startTimer();
+            showToast(t('timeLimitOn'), 'info');
+        }
+    }
+
+    // ─── Toast ───
+    function showToast(msg, type = 'info') {
+        const toast = document.getElementById('toast');
+        toast.textContent = msg;
+        toast.className = `toast ${type} show`;
+        setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    // ─── 初始化 ───
+    window.onload = function() {
+        document.getElementById('loginPage').style.display = 'flex';
+        document.getElementById('mainPage').style.display = 'none';
+    };
+</script>
+</body>
+</html>
